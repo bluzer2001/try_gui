@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from screeninfo import get_monitors
+import threading
+import time
 
 # Определение коэффициента масштабирования
 monitor = get_monitors()[0]
@@ -44,16 +46,40 @@ def show_create_file_options():
     date_entry = ttk.Entry(frame)
     date_entry.pack(pady=scale_value(5))
 
-    btn_submit = create_button(frame, "Создать", lambda: create_file(version_dropdown.get(), subversion_dropdown.get(), date_entry.get()), tooltip="Создать новый файл")
+    btn_submit = create_button(frame, "Создать", lambda: start_create_file_process(version_dropdown.get(), subversion_dropdown.get(), date_entry.get()), tooltip="Создать новый файл")
     btn_submit.pack(pady=scale_value(20), ipadx=scale_value(10), ipady=scale_value(5))
+
+    btn_parameters = create_special_button(frame, "Параметры", show_parameters, tooltip="Настройки параметров")
+    btn_parameters.pack(pady=scale_value(10), ipadx=scale_value(10), ipady=scale_value(5))
 
     btn_back = create_back_button()
     btn_back.pack(pady=scale_value(10), ipadx=scale_value(10), ipady=scale_value(5))
 
-def create_file(version, subversion, date):
-    # Здесь можно добавить логику создания файла на основе выбранных данных
-    messagebox.showinfo("Уведомление", f"Создан файл с версией: {version}, подверсией: {subversion}, датой: {date}")
-    show_comparison_options()  # Возвращаемся к выбору после создания файла
+def start_create_file_process(version, subversion, date):
+    # Создаем окно статуса
+    status_window = tk.Toplevel(root)
+    status_window.title("Статус выполнения")
+    status_window.geometry("300x100")
+    status_window.configure(bg="white")
+
+    lbl_status = ttk.Label(status_window, text="Начало выполнения...", font=("Helvetica", scale_value(12)), background="white")
+    lbl_status.pack(pady=scale_value(20))
+
+    def update_status(message):
+        lbl_status.config(text=message)
+        status_window.update_idletasks()
+
+    def create_file():
+        update_status("Идет создание файла...")
+        time.sleep(2)  # Замените это время реальной логикой выполнения
+
+        update_status("Создание файла завершено!")
+        time.sleep(1)  # Небольшая задержка, чтобы пользователь успел увидеть сообщение
+
+        status_window.destroy()  # Закрываем окно статуса
+        show_comparison_options()  # Возвращаемся к выбору после создания файла
+
+    threading.Thread(target=create_file).start()  # Выполняем в отдельном потоке
 
 def export_from_db():
     messagebox.showinfo("Уведомление", "Выгрузка файла из БД")
@@ -74,6 +100,9 @@ def show_main_menu():
     btn_export_services = create_button(frame, "Выгрузить файл (с сервисов)", export_from_services, tooltip="Выгрузить файл с сервисов")
     btn_export_services.pack(side="left", padx=scale_value(10), pady=scale_value(20), ipadx=scale_value(10), ipady=scale_value(5))
 
+def show_parameters():
+    messagebox.showinfo("Параметры", "Настройки параметров")
+
 def clear_frame():
     for widget in frame.winfo_children():
         widget.destroy()
@@ -83,6 +112,15 @@ def create_button(parent, text, command, tooltip=None):
     style.configure("TButton", font=("Helvetica", scale_value(12), "bold"), background="#4CAF50", foreground="white", borderwidth=5, relief="flat", padding=(scale_value(10), scale_value(5)))
     style.map("TButton", background=[("active", "#45a049")], foreground=[("disabled", "grey")])
     button = ttk.Button(parent, text=text, command=command, style="TButton")
+    if tooltip:
+        create_tooltip(button, tooltip)
+    return button
+
+def create_special_button(parent, text, command, tooltip=None):
+    style = ttk.Style()
+    style.configure("Special.TButton", font=("Helvetica", scale_value(14), "bold"), background="#FF5722", foreground="white", borderwidth=5, relief="flat", padding=(scale_value(12), scale_value(7)))
+    style.map("Special.TButton", background=[("active", "#E64A19")], foreground=[("disabled", "grey")])
+    button = ttk.Button(parent, text=text, command=command, style="Special.TButton")
     if tooltip:
         create_tooltip(button, tooltip)
     return button
