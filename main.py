@@ -34,26 +34,26 @@ def show_create_file_options():
     clear_frame()
     lbl_title.config(text="Сделать файл")
 
-    ttk.Label(frame, text="Выберите версию", background="white", font=("Helvetica", scale_value(12))).pack(pady=scale_value(5))
+    ttk.Label(frame, text="Выберите версию", background="white", font=("Helvetica", scale_value(12))).grid(row=0, column=0, sticky='w', pady=scale_value(5))
     version_dropdown = ttk.Combobox(frame, values=["Версия 1", "Версия 2", "Версия 3"])
-    version_dropdown.pack(pady=scale_value(5))
+    version_dropdown.grid(row=0, column=1, pady=scale_value(5), padx=scale_value(10))
 
-    ttk.Label(frame, text="Выберите подверсию", background="white", font=("Helvetica", scale_value(12))).pack(pady=scale_value(5))
+    ttk.Label(frame, text="Выберите подверсию", background="white", font=("Helvetica", scale_value(12))).grid(row=1, column=0, sticky='w', pady=scale_value(5))
     subversion_dropdown = ttk.Combobox(frame, values=["Подверсия 1.1", "Подверсия 1.2", "Подверсия 1.3"])
-    subversion_dropdown.pack(pady=scale_value(5))
+    subversion_dropdown.grid(row=1, column=1, pady=scale_value(5), padx=scale_value(10))
 
-    ttk.Label(frame, text="Задайте дату", background="white", font=("Helvetica", scale_value(12))).pack(pady=scale_value(5))
+    ttk.Label(frame, text="Задайте дату", background="white", font=("Helvetica", scale_value(12))).grid(row=2, column=0, sticky='w', pady=scale_value(5))
     date_entry = ttk.Entry(frame)
-    date_entry.pack(pady=scale_value(5))
+    date_entry.grid(row=2, column=1, pady=scale_value(5), padx=scale_value(10))
 
     btn_submit = create_button(frame, "Создать", lambda: start_create_file_process(version_dropdown.get(), subversion_dropdown.get(), date_entry.get()), tooltip="Создать новый файл")
-    btn_submit.pack(pady=scale_value(20), ipadx=scale_value(10), ipady=scale_value(5))
+    btn_submit.grid(row=3, column=0, columnspan=2, pady=scale_value(20), ipadx=scale_value(10), ipady=scale_value(5))
 
     btn_parameters = create_special_button(frame, "Параметры", show_parameters, tooltip="Настройки параметров")
-    btn_parameters.pack(pady=scale_value(10), ipadx=scale_value(10), ipady=scale_value(5))
+    btn_parameters.grid(row=4, column=0, columnspan=2, pady=scale_value(10), ipadx=scale_value(10), ipady=scale_value(5))
 
     btn_back = create_back_button()
-    btn_back.pack(pady=scale_value(10), ipadx=scale_value(10), ipady=scale_value(5))
+    btn_back.grid(row=5, column=0, columnspan=2, pady=scale_value(10), ipadx=scale_value(10), ipady=scale_value(5))
 
 def start_create_file_process(version, subversion, date):
     # Создаем окно статуса
