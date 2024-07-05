@@ -1,40 +1,25 @@
-# -*- mode: python ; coding: utf-8 -*-
+import sys
+import os
 
-block_cipher = None
+def get_running_directory():
+    if hasattr(sys, 'frozen'):
+        # The application is frozen (running as an executable)
+        running_dir = os.path.dirname(sys.executable)
+    else:
+        # The application is not frozen (running as a script)
+        running_dir = os.path.dirname(os.path.abspath(__file__))
+    return running_dir
 
-a = Analysis(
-    ['oracle_test.py'],
-    pathex=[],
-    binaries=[],
-    datas=[],
-    hiddenimports=[],
-    hookspath=[],
-    runtime_hooks=['runtime_hook.py'],  # Include the runtime hook here
-    excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
-)
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-exe = EXE(
-    pyz,
-    a.scripts,
-    [],
-    exclude_binaries=True,
-    name='oracle_test',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    console=True,
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='oracle_test',
-)
+def main():
+    running_dir = get_running_directory()
+    print(f"The executable is running from: {running_dir}")
+
+    # Example of using the running directory to load a configuration file
+    config_path = os.path.join(running_dir, 'config.json')
+    if os.path.exists(config_path):
+        print(f"Configuration file found at: {config_path}")
+    else:
+        print(f"No configuration file found at: {config_path}")
+
+if __name__ == "__main__":
+    main()
