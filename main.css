@@ -1,0 +1,30 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 50px;
+}
+
+.hidden {
+    display: none;
+}
+
+#loading-indicator {
+    margin-top: 20px;
+    font-size: 18px;
+    color: rgb(139, 197, 64); /* Зеленый цвет */
+}
+
+.button-container {
+    margin-top: 20px;
+}
+
+button:disabled {
+    background-color: rgb(118, 120, 122); /* Серый цвет */
+    color: white;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
