@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сервис отчетов</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <h1>Сервис отчетов</h1>
+
+    <!-- Выпадающий список для выбора отчета -->
+    <div class="dropdown-container">
+        <select id="report-dropdown">
+            <option value="" disabled selected>Выберите отчет</option>
+            <option value="financial_report">Отчет 1: Финансовый</option>
+            <option value="security_report">Отчет 2: Риски безопасности</option>
+            <option value="performance_report">Отчет 3: Производительность</option>
+        </select>
+    </div>
+
+    <!-- Кнопка для генерации отчета -->
+    <div class="button-container">
+        <button id="generate-report-button" disabled>Показать отчет</button>
+    </div>
+
+    <!-- Индикатор загрузки -->
+    <div id="loading-indicator" class="hidden">Загрузка...</div>
+
+    <!-- Контейнер для отображения отчета -->
+    <div id="report-output"></div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
