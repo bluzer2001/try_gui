@@ -1,41 +1,8 @@
-Да, это возможно! Вы можете реализовать функционал, при котором фронтенд (JavaScript) отправляет запрос на сервер (FastAPI) при выборе отчета, и сервер возвращает HTML, который будет динамически добавлен на страницу. Это можно сделать через AJAX-запросы (например, с использованием `fetch`) для получения HTML от бэкенда и последующей вставки этого HTML на страницу.
+Для этой задачи мы можем использовать JavaScript, чтобы проверять наличие введённых данных и корректность email, а также управлять состоянием кнопки. 
 
-### Как это сделать:
+### Шаг 1: Обновление HTML-шаблона
 
-1. **На стороне клиента (JavaScript)**: При выборе отчета отправить запрос на сервер для получения HTML-элемента с полями для ввода.
-2. **На стороне сервера (FastAPI)**: Создать эндпоинт, который будет возвращать HTML-код, зависящий от выбранного отчета.
-3. **Динамическая вставка HTML**: Когда клиент получает HTML от сервера, он динамически вставляет его на страницу.
-
-### Шаг 1: Обновление JavaScript на фронтенде
-
-В `static/js/script.js` нужно изменить логику таким образом, чтобы при выборе отчета отправлялся запрос на сервер, и после получения ответа HTML-код добавлялся на страницу.
-
-```javascript
-document.addEventListener("DOMContentLoaded", function () {
-    const reportDropdown = document.getElementById("report-dropdown");
-    const reportParametersContainer = document.getElementById("report-parameters-container");
-
-    // Когда выбран отчет, отправляем запрос на сервер для получения параметров
-    reportDropdown.addEventListener("change", function () {
-        const selectedReport = reportDropdown.value;
-
-        // Отправляем запрос на сервер для получения HTML параметров
-        fetch(`/get_report_parameters/${selectedReport}`)
-            .then(response => response.text())
-            .then(html => {
-                // Вставляем полученный HTML в контейнер для параметров отчета
-                reportParametersContainer.innerHTML = html;
-            })
-            .catch(error => {
-                console.error("Ошибка загрузки параметров:", error);
-            });
-    });
-});
-```
-
-### Шаг 2: Обновление HTML-шаблона
-
-В `index.html` добавим контейнер, в который будет динамически вставляться HTML с параметрами отчета.
+В `index.html` добавим текстовый блок для вывода сообщений об ошибках под формой ввода и стилизуем кнопку для отображения различных состояний:
 
 ```html
 <!DOCTYPE html>
@@ -59,119 +26,130 @@ document.addEventListener("DOMContentLoaded", function () {
         </select>
     </div>
 
-    <!-- Контейнер для параметров отчета, который будет заполняться динамически -->
+    <!-- Контейнер для параметров отчета -->
     <div id="report-parameters-container"></div>
 
-    <!-- Кнопка для генерации отчета -->
+    <!-- Кнопка для генерации отчета с указанием неактивного состояния -->
     <div class="button-container">
-        <button id="generate-report-button" disabled>Показать отчет</button>
+        <button id="generate-report-button" class="inactive" disabled>Показать отчет</button>
     </div>
 
-    <div id="loading-indicator" class="hidden">Загрузка...</div>
-    <div id="report-output"></div>
+    <!-- Сообщение об ошибках валидации -->
+    <div id="error-message" class="error-message hidden"></div>
 
     <script src="/static/js/script.js"></script>
 </body>
 </html>
 ```
 
-### Шаг 3: Создание эндпоинта в FastAPI
+### Шаг 2: CSS для стилизации кнопки и сообщений об ошибках
 
-Теперь добавим эндпоинт на стороне FastAPI, который будет возвращать HTML в зависимости от выбранного отчета.
+В `static/css/styles.css` добавим стили для отображения кнопки в различных состояниях и стиля для сообщений об ошибках.
 
-```python
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+```css
+.inactive {
+    background-color: rgb(118, 120, 122); /* Серый цвет для неактивного состояния */
+    color: #ffffff;
+    cursor: not-allowed;
+}
 
-app = FastAPI()
+.active {
+    background-color: rgb(139, 197, 64); /* Зеленый цвет для активного состояния */
+    color: #ffffff;
+    cursor: pointer;
+}
 
-# Указываем путь к шаблонам
-templates = Jinja2Templates(directory="templates")
+.error-message {
+    color: red;
+    font-size: 14px;
+    margin-top: 10px;
+}
 
-# Главная страница
-@app.get("/", response_class=HTMLResponse)
-async def get_report_page(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-# Эндпоинт для получения параметров отчета в виде HTML
-@app.get("/get_report_parameters/{report_type}", response_class=HTMLResponse)
-async def get_report_parameters(report_type: str, request: Request):
-    # Здесь можно добавлять разные формы параметров в зависимости от типа отчета
-    if report_type == "financial_report":
-        return templates.TemplateResponse("financial_report_parameters.html", {"request": request})
-    elif report_type == "security_report":
-        return templates.TemplateResponse("security_report_parameters.html", {"request": request})
-    elif report_type == "performance_report":
-        return templates.TemplateResponse("performance_report_parameters.html", {"request": request})
-    else:
-        return HTMLResponse("<p>Параметры для данного отчета не найдены.</p>")
+.hidden {
+    display: none;
+}
 ```
 
-### Шаг 4: Создание HTML-шаблонов для параметров отчета
+### Шаг 3: JavaScript для активации кнопки и валидации данных
 
-Теперь создадим отдельные шаблоны для каждого типа отчета в папке `templates`:
+В файле `static/js/script.js` добавим логику, чтобы отслеживать заполнение полей и валидацию email и даты, после чего обновлять состояние кнопки.
 
-#### `financial_report_parameters.html` (пример для финансового отчета)
+```javascript
+document.addEventListener("DOMContentLoaded", function () {
+    const reportDropdown = document.getElementById("report-dropdown");
+    const reportParametersContainer = document.getElementById("report-parameters-container");
+    const generateButton = document.getElementById("generate-report-button");
+    const errorMessage = document.getElementById("error-message");
 
-```html
-<div id="report-parameters">
-    <h3>Параметры для финансового отчета</h3>
-    <div>
-        <label for="report-date">Отчетная дата:</label>
-        <input type="date" id="report-date">
-    </div>
-    <div>
-        <label for="email">Электронная почта:</label>
-        <input type="email" id="email" placeholder="Введите вашу почту">
-    </div>
-</div>
+    // Функция проверки ввода email
+    function isValidEmail(email) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailPattern.test(email);
+    }
+
+    // Функция проверки ввода даты
+    function isValidDate(date) {
+        return date !== "";
+    }
+
+    // Функция активации кнопки
+    function updateButtonState() {
+        const reportDate = document.getElementById("report-date")?.value || "";
+        const email = document.getElementById("email")?.value || "";
+
+        if (isValidEmail(email) && isValidDate(reportDate)) {
+            generateButton.classList.add("active");
+            generateButton.classList.remove("inactive");
+            generateButton.disabled = false;
+            errorMessage.classList.add("hidden"); // скрываем ошибку
+        } else {
+            generateButton.classList.add("inactive");
+            generateButton.classList.remove("active");
+            generateButton.disabled = true;
+        }
+    }
+
+    // Загрузка параметров отчета по выбору отчета
+    reportDropdown.addEventListener("change", function () {
+        const selectedReport = reportDropdown.value;
+
+        fetch(`/get_report_parameters/${selectedReport}`)
+            .then(response => response.text())
+            .then(html => {
+                reportParametersContainer.innerHTML = html;
+
+                // События на полях формы после загрузки параметров
+                const reportDateInput = document.getElementById("report-date");
+                const emailInput = document.getElementById("email");
+
+                reportDateInput.addEventListener("input", updateButtonState);
+                emailInput.addEventListener("input", updateButtonState);
+
+                generateButton.addEventListener("click", function () {
+                    if (!isValidEmail(emailInput.value)) {
+                        errorMessage.textContent = "Пожалуйста, введите корректный email.";
+                        errorMessage.classList.remove("hidden");
+                    } else if (!isValidDate(reportDateInput.value)) {
+                        errorMessage.textContent = "Пожалуйста, введите корректную дату.";
+                        errorMessage.classList.remove("hidden");
+                    } else {
+                        errorMessage.classList.add("hidden");
+                        // Здесь можно вызвать отправку данных на сервер, если валидация пройдена
+                        console.log("Форма корректна, можно отправлять данные.");
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Ошибка загрузки параметров:", error);
+            });
+    });
+});
 ```
 
-#### `security_report_parameters.html` (пример для отчета по безопасности)
+### Пояснение логики:
 
-```html
-<div id="report-parameters">
-    <h3>Параметры для отчета по рискам безопасности</h3>
-    <div>
-        <label for="security-level">Уровень безопасности:</label>
-        <input type="text" id="security-level" placeholder="Введите уровень безопасности">
-    </div>
-    <div>
-        <label for="email">Электронная почта:</label>
-        <input type="email" id="email" placeholder="Введите вашу почту">
-    </div>
-</div>
-```
+1. **Функция `updateButtonState`**: Проверяет, введены ли данные в поле даты и корректный ли email, чтобы обновить состояние кнопки.
+2. **Валидация при клике**: После нажатия на кнопку "Показать отчет" проверяет, введены ли корректные данные в полях и выводит сообщение об ошибке, если данные некорректны.
+3. **CSS-классы**: При разных состояниях кнопки добавляются и удаляются классы `active` и `inactive`, чтобы менять цвет кнопки. 
 
-#### `performance_report_parameters.html` (пример для отчета по производительности)
-
-```html
-<div id="report-parameters">
-    <h3>Параметры для отчета по производительности</h3>
-    <div>
-        <label for="performance-metric">Показатель производительности:</label>
-        <input type="text" id="performance-metric" placeholder="Введите показатель">
-    </div>
-    <div>
-        <label for="email">Электронная почта:</label>
-        <input type="email" id="email" placeholder="Введите вашу почту">
-    </div>
-</div>
-```
-
-### Шаг 5: Запуск приложения
-
-После внесения всех изменений перезапустите FastAPI сервер:
-
-```bash
-uvicorn main:app --reload
-```
-
-### Пояснение:
-
-- **JavaScript** отправляет запрос на сервер, когда пользователь выбирает тип отчета, и получает HTML-код с параметрами.
-- **FastAPI** возвращает HTML-код через Jinja2-шаблоны, зависящий от выбранного отчета.
-- HTML динамически вставляется на страницу в контейнере `report-parameters-container`.
-
-Теперь, при выборе типа отчета, браузер будет отправлять запрос на сервер, который вернет HTML с полями для ввода параметров отчета, а затем этот HTML будет динамически добавлен на страницу.
+Теперь кнопка будет доступна только при корректном вводе данных, и пользователю будет показано сообщение об ошибке, если введены неверные данные.
