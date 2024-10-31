@@ -1,126 +1,94 @@
-Давайте проверим обработку успешного ответа и вывод сообщения. В исходном JavaScript-коде сообщение выводится в случае, если `data.success` возвращает `true`. Возможно, что серверный ответ обрабатывается не так, как ожидалось, или нужные классы и стили для вывода сообщения не применяются корректно.
+Для динамической подгрузки JavaScript файлов можно использовать JavaScript-методы для создания и добавления новых `<script>` элементов в DOM. Например, при выборе определенного отчета мы можем загружать связанный с ним скрипт, который будет содержать необходимую логику.
 
-Попробуем немного упростить обработку ответа и проверку, чтобы точно убедиться в корректной работе. 
+Вот пошаговое руководство по реализации этого подхода:
 
-### Обновленный JavaScript с улучшенной обработкой ответа
+### Шаг 1: Структурируем проект
 
-Мы добавим явное логирование ответа и упростим часть с выводом сообщений для лучшей отладки:
+1. В папке `static/js/` создадим отдельные файлы JavaScript для каждого отчета:
+    - `static/js/financial_report.js`
+    - `static/js/security_report.js`
+    - `static/js/performance_report.js`
+
+2. В каждом из этих файлов добавим специфическую логику, необходимую для конкретного отчета.
+
+### Шаг 2: Напишем функцию для динамической загрузки скриптов
+
+Добавим в `static/js/script.js` функцию для подгрузки скриптов. Функция `loadScript` будет добавлять новый `<script>` элемент с указанным URL, а перед этим удалять старые скрипты для предотвращения дублирования.
 
 ```javascript
-document.addEventListener("DOMContentLoaded", function () {
-    const reportDropdown = document.getElementById("report-dropdown");
-    const reportParametersContainer = document.getElementById("report-parameters-container");
-    const generateButton = document.getElementById("generate-report-button");
-    const errorMessage = document.getElementById("error-message");
-
-    function isValidEmail(email) {
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailPattern.test(email);
+function loadScript(url) {
+    // Удаляем предыдущие скрипты отчета
+    const existingScript = document.getElementById("report-specific-script");
+    if (existingScript) {
+        existingScript.remove();
     }
 
-    function isValidDate(date) {
-        return date !== "";
-    }
-
-    function updateButtonState() {
-        const reportDate = document.getElementById("report-date")?.value || "";
-        const email = document.getElementById("email")?.value || "";
-
-        if (isValidEmail(email) && isValidDate(reportDate)) {
-            generateButton.classList.add("active");
-            generateButton.classList.remove("inactive");
-            generateButton.disabled = false;
-            errorMessage.classList.add("hidden");
-        } else {
-            generateButton.classList.add("inactive");
-            generateButton.classList.remove("active");
-            generateButton.disabled = true;
-        }
-    }
-
-    reportDropdown.addEventListener("change", function () {
-        const selectedReport = reportDropdown.value;
-
-        fetch(`/get_report_parameters/${selectedReport}`)
-            .then(response => response.text())
-            .then(html => {
-                reportParametersContainer.innerHTML = html;
-
-                const reportDateInput = document.getElementById("report-date");
-                const emailInput = document.getElementById("email");
-
-                reportDateInput.addEventListener("input", updateButtonState);
-                emailInput.addEventListener("input", updateButtonState);
-
-                generateButton.addEventListener("click", function () {
-                    if (isValidEmail(emailInput.value) && isValidDate(reportDateInput.value)) {
-                        errorMessage.classList.add("hidden");
-
-                        // Отправляем данные на сервер
-                        fetch("/generate_report", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                report_type: selectedReport,
-                                report_date: reportDateInput.value,
-                                email: emailInput.value
-                            })
-                        })
-                        .then(response => {
-                            if (response.ok) {
-                                return response.json();
-                            } else if (response.status === 400) {
-                                throw new Error("Некорректные данные. Проверьте и заполните форму заново.");
-                            } else {
-                                throw new Error("Ошибка сервера. Пожалуйста, попробуйте снова позже.");
-                            }
-                        })
-                        .then(data => {
-                            console.log("Ответ сервера:", data); // Логируем ответ сервера для проверки
-                            
-                            if (data.success) {
-                                errorMessage.classList.remove("hidden");
-                                errorMessage.style.color = "green";
-                                errorMessage.textContent = data.message || "Отчет формируется и скоро придет на почту.";
-                            }
-                        })
-                        .catch(error => {
-                            // Обработка ошибок
-                            errorMessage.classList.remove("hidden");
-                            errorMessage.style.color = "red";
-                            errorMessage.textContent = error.message;
-                        });
-                    } else {
-                        errorMessage.textContent = "Пожалуйста, введите корректные данные.";
-                        errorMessage.classList.remove("hidden");
-                    }
-                });
-            })
-            .catch(error => {
-                console.error("Ошибка загрузки параметров:", error);
-            });
-    });
-});
-```
-
-### Основные изменения:
-
-1. **Логирование ответа сервера**: Мы добавили `console.log("Ответ сервера:", data);`, чтобы убедиться, что `data.success` возвращается корректно.
-2. **Упрощение вывода успешного сообщения**: Теперь сообщение `data.message` или стандартное сообщение отображается сразу, если `data.success` истинно.
-
-### Проверьте серверный ответ
-
-Убедитесь, что FastAPI возвращает ответ в следующем формате:
-
-```json
-{
-    "success": true,
-    "message": "Отчет формируется и скоро придет на почту."
+    // Создаем и подключаем новый скрипт
+    const script = document.createElement("script");
+    script.src = url;
+    script.id = "report-specific-script";
+    script.defer = true;  // Добавляем defer, чтобы скрипт загружался после парсинга HTML
+    document.body.appendChild(script);
 }
 ```
 
-### Возможная причина ошибки:
+### Шаг 3: Загрузка скрипта при выборе отчета
 
-Если сервер возвращает ответ не в указанном формате или в ответе отсутствует ключ `success`, то код не сможет корректно обработать успех.
+В обработчике выбора отчета из выпадающего списка добавим вызов `loadScript`, который будет загружать нужный скрипт в зависимости от выбранного отчета.
+
+```javascript
+reportDropdown.addEventListener("change", function () {
+    const selectedReport = reportDropdown.value;
+
+    fetch(`/get_report_parameters/${selectedReport}`)
+        .then(response => response.text())
+        .then(html => {
+            reportParametersContainer.innerHTML = html;
+
+            // Загрузка специфичного для отчета JavaScript файла
+            let scriptUrl = "";
+            if (selectedReport === "financial_report") {
+                scriptUrl = "/static/js/financial_report.js";
+            } else if (selectedReport === "security_report") {
+                scriptUrl = "/static/js/security_report.js";
+            } else if (selectedReport === "performance_report") {
+                scriptUrl = "/static/js/performance_report.js";
+            }
+
+            // Загрузка скрипта
+            if (scriptUrl) {
+                loadScript(scriptUrl);
+            }
+
+            // Подключаем обработчики для параметров отчета
+            const reportDateInput = document.getElementById("report-date");
+            const emailInput = document.getElementById("email");
+
+            reportDateInput.addEventListener("input", updateButtonState);
+            emailInput.addEventListener("input", updateButtonState);
+        })
+        .catch(error => {
+            console.error("Ошибка загрузки параметров:", error);
+        });
+});
+```
+
+### Шаг 4: Добавляем логику в файлы отчетов
+
+Пример содержимого `financial_report.js`, где вы можете определить специфическую логику для каждого отчета:
+
+```javascript
+// Логика для финансового отчета
+document.addEventListener("DOMContentLoaded", function () {
+    console.log("Скрипт для финансового отчета загружен");
+    
+    // Добавьте специфические обработчики для финансового отчета
+    // Например, валидация для полей финансового отчета
+});
+```
+
+Каждый JavaScript файл для отчета (`security_report.js`, `performance_report.js`) может содержать аналогичную структуру, но с уникальной логикой, соответствующей конкретному отчету.
+
+### Резюме
+
+Теперь, при выборе отчета, будет динамически загружаться связанный с ним JavaScript файл. Эта реализация позволит хранить и управлять кодом каждого отчета в отдельном файле, что делает код более чистым и легко расширяемым.
