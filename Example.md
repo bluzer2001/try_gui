@@ -1,94 +1,113 @@
-Для динамической подгрузки JavaScript файлов можно использовать JavaScript-методы для создания и добавления новых `<script>` элементов в DOM. Например, при выборе определенного отчета мы можем загружать связанный с ним скрипт, который будет содержать необходимую логику.
+Действительно, если `reportDateInput` и `emailInput` добавляются в DOM только после выбора отчета, то добавление обработчиков событий для них сразу не сработает. Мы можем перенести добавление этих `EventListener` внутрь динамически подгружаемых JavaScript файлов, чтобы каждый отчетный скрипт сам добавлял необходимые обработчики. 
 
-Вот пошаговое руководство по реализации этого подхода:
+В основной логике тогда останется лишь код для выбора отчета и загрузки соответствующего скрипта, что сделает архитектуру более чистой. Вот как можно реализовать это изменение.
 
-### Шаг 1: Структурируем проект
+### Обновленный основной JavaScript (`script.js`)
 
-1. В папке `static/js/` создадим отдельные файлы JavaScript для каждого отчета:
-    - `static/js/financial_report.js`
-    - `static/js/security_report.js`
-    - `static/js/performance_report.js`
+В основном JavaScript мы теперь лишь:
+1. Загружаем HTML для параметров выбранного отчета.
+2. Подключаем соответствующий JavaScript файл для выбранного отчета.
 
-2. В каждом из этих файлов добавим специфическую логику, необходимую для конкретного отчета.
-
-### Шаг 2: Напишем функцию для динамической загрузки скриптов
-
-Добавим в `static/js/script.js` функцию для подгрузки скриптов. Функция `loadScript` будет добавлять новый `<script>` элемент с указанным URL, а перед этим удалять старые скрипты для предотвращения дублирования.
+Обработчики событий будут размещены непосредственно в файлах для каждого отчета.
 
 ```javascript
-function loadScript(url) {
-    // Удаляем предыдущие скрипты отчета
-    const existingScript = document.getElementById("report-specific-script");
-    if (existingScript) {
-        existingScript.remove();
+document.addEventListener("DOMContentLoaded", function () {
+    const reportDropdown = document.getElementById("report-dropdown");
+    const reportParametersContainer = document.getElementById("report-parameters-container");
+
+    // Функция для загрузки и подключения скриптов
+    function loadScript(url) {
+        const existingScript = document.getElementById("report-specific-script");
+        if (existingScript) {
+            existingScript.remove();
+        }
+
+        const script = document.createElement("script");
+        script.src = url;
+        script.id = "report-specific-script";
+        script.defer = true;
+        document.body.appendChild(script);
     }
 
-    // Создаем и подключаем новый скрипт
-    const script = document.createElement("script");
-    script.src = url;
-    script.id = "report-specific-script";
-    script.defer = true;  // Добавляем defer, чтобы скрипт загружался после парсинга HTML
-    document.body.appendChild(script);
-}
-```
+    // Обработчик выбора отчета
+    reportDropdown.addEventListener("change", function () {
+        const selectedReport = reportDropdown.value;
 
-### Шаг 3: Загрузка скрипта при выборе отчета
+        fetch(`/get_report_parameters/${selectedReport}`)
+            .then(response => response.text())
+            .then(html => {
+                reportParametersContainer.innerHTML = html;
 
-В обработчике выбора отчета из выпадающего списка добавим вызов `loadScript`, который будет загружать нужный скрипт в зависимости от выбранного отчета.
+                // Подключаем JavaScript файл для выбранного отчета
+                let scriptUrl = "";
+                if (selectedReport === "financial_report") {
+                    scriptUrl = "/static/js/financial_report.js";
+                } else if (selectedReport === "security_report") {
+                    scriptUrl = "/static/js/security_report.js";
+                } else if (selectedReport === "performance_report") {
+                    scriptUrl = "/static/js/performance_report.js";
+                }
 
-```javascript
-reportDropdown.addEventListener("change", function () {
-    const selectedReport = reportDropdown.value;
-
-    fetch(`/get_report_parameters/${selectedReport}`)
-        .then(response => response.text())
-        .then(html => {
-            reportParametersContainer.innerHTML = html;
-
-            // Загрузка специфичного для отчета JavaScript файла
-            let scriptUrl = "";
-            if (selectedReport === "financial_report") {
-                scriptUrl = "/static/js/financial_report.js";
-            } else if (selectedReport === "security_report") {
-                scriptUrl = "/static/js/security_report.js";
-            } else if (selectedReport === "performance_report") {
-                scriptUrl = "/static/js/performance_report.js";
-            }
-
-            // Загрузка скрипта
-            if (scriptUrl) {
-                loadScript(scriptUrl);
-            }
-
-            // Подключаем обработчики для параметров отчета
-            const reportDateInput = document.getElementById("report-date");
-            const emailInput = document.getElementById("email");
-
-            reportDateInput.addEventListener("input", updateButtonState);
-            emailInput.addEventListener("input", updateButtonState);
-        })
-        .catch(error => {
-            console.error("Ошибка загрузки параметров:", error);
-        });
+                if (scriptUrl) {
+                    loadScript(scriptUrl);
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка загрузки параметров:", error);
+            });
+    });
 });
 ```
 
-### Шаг 4: Добавляем логику в файлы отчетов
+### Пример кода для специфического отчета (`financial_report.js`)
 
-Пример содержимого `financial_report.js`, где вы можете определить специфическую логику для каждого отчета:
+Теперь, в каждом скрипте отчета (`financial_report.js`, `security_report.js`, `performance_report.js`), мы можем добавить обработчики событий непосредственно для полей, которые связаны с конкретным отчетом. Это обеспечит, что обработчики добавляются только после подгрузки HTML и будут уникальными для каждого отчета.
 
 ```javascript
-// Логика для финансового отчета
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("Скрипт для финансового отчета загружен");
-    
-    // Добавьте специфические обработчики для финансового отчета
-    // Например, валидация для полей финансового отчета
+    const generateButton = document.getElementById("generate-report-button");
+    const reportDateInput = document.getElementById("report-date");
+    const emailInput = document.getElementById("email");
+    const errorMessage = document.getElementById("error-message");
+
+    function isValidEmail(email) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailPattern.test(email);
+    }
+
+    function isValidDate(date) {
+        return date !== "";
+    }
+
+    function updateButtonState() {
+        const reportDate = reportDateInput.value || "";
+        const email = emailInput.value || "";
+
+        if (isValidEmail(email) && isValidDate(reportDate)) {
+            generateButton.classList.add("active");
+            generateButton.classList.remove("inactive");
+            generateButton.disabled = false;
+            errorMessage.classList.add("hidden");
+        } else {
+            generateButton.classList.add("inactive");
+            generateButton.classList.remove("active");
+            generateButton.disabled = true;
+        }
+    }
+
+    reportDateInput.addEventListener("input", updateButtonState);
+    emailInput.addEventListener("input", updateButtonState);
+
+    generateButton.addEventListener("click", function () {
+        // Логика для отправки запроса и обработки результата
+        // ...
+    });
 });
 ```
 
-Каждый JavaScript файл для отчета (`security_report.js`, `performance_report.js`) может содержать аналогичную структуру, но с уникальной логикой, соответствующей конкретному отчету.
+### Объяснение
 
-### Резюме
+1. **Динамическое подключение JavaScript**: В основном скрипте мы подгружаем соответствующий JavaScript файл после получения параметров от сервера.
+2. **Специфичные обработчики в отчетах**: Каждый отчетный JavaScript файл теперь добавляет свои обработчики событий для полей, которые приходят с бэкенда. Это гарантирует, что обработчики существуют только для полей, уже находящихся в DOM.
 
-Теперь, при выборе отчета, будет динамически загружаться связанный с ним JavaScript файл. Эта реализация позволит хранить и управлять кодом каждого отчета в отдельном файле, что делает код более чистым и легко расширяемым.
+Такой подход позволяет избежать ошибок, связанных с попыткой добавления обработчиков к элементам, которых еще нет на странице.
