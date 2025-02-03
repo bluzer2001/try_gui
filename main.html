@@ -4,32 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Сервис отчетов</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Сервис отчетов</h1>
+    <div class="container">
+        <h1>Сервис отчетов</h1>
+        
+        <div class="form-group">
+            <label for="report-selector">Выберите отчет:</label>
+            <select id="report-selector" class="form-control">
+                <option value="">-- Выберите отчет --</option>
+                <option value="report1">Отчет 1</option>
+                <option value="report2">Отчет 2</option>
+                <option value="report3">Отчет 3</option>
+            </select>
+        </div>
 
-    <!-- Выпадающий список для выбора отчета -->
-    <div class="dropdown-container">
-        <select id="report-dropdown">
-            <option value="" disabled selected>Выберите отчет</option>
-            <option value="financial_report">Отчет 1: Финансовый</option>
-            <option value="security_report">Отчет 2: Риски безопасности</option>
-            <option value="performance_report">Отчет 3: Производительность</option>
-        </select>
+        <div id="report-fields" class="hidden">
+            <div class="form-group">
+                <label for="date">Дата:</label>
+                <input type="date" id="date" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" class="form-control">
+            </div>
+            <button id="generate-report" class="btn">Сформировать отчет</button>
+        </div>
     </div>
 
-    <!-- Кнопка для генерации отчета -->
-    <div class="button-container">
-        <button id="generate-report-button" disabled>Показать отчет</button>
-    </div>
+    <script>
+        document.getElementById('report-selector').addEventListener('change', function() {
+            const reportFields = document.getElementById('report-fields');
+            if (this.value) {
+                reportFields.classList.remove('hidden');
+            } else {
+                reportFields.classList.add('hidden');
+            }
+        });
 
-    <!-- Индикатор загрузки -->
-    <div id="loading-indicator" class="hidden">Загрузка...</div>
+        document.getElementById('generate-report').addEventListener('click', function() {
+            const reportType = document.getElementById('report-selector').value;
+            const date = document.getElementById('date').value;
+            const email = document.getElementById('email').value;
 
-    <!-- Контейнер для отображения отчета -->
-    <div id="report-output"></div>
-
-    <script src="/static/js/script.js"></script>
+            if (reportType && date && email) {
+                alert(`Отчет "${reportType}" будет сформирован для email: ${email} на дату: ${date}`);
+            } else {
+                alert('Пожалуйста, заполните все поля.');
+            }
+        });
+    </script>
 </body>
 </html>
