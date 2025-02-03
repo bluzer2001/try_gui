@@ -20,40 +20,55 @@
             </select>
         </div>
 
+        <div id="report-instructions" class="hidden">
+            <p class="instructions-text">Для формирования отчета выберите тип отчета, укажите дату и email. Отчет будет отправлен на указанный email.</p>
+        </div>
+
         <div id="report-fields" class="hidden">
             <div class="form-group">
                 <label for="date">Дата:</label>
-                <input type="date" id="date" class="form-control">
+                <input type="date" id="date" class="form-control" required>
             </div>
             <div class="form-group">
                 <label for="email">Email:</label>
-                <input type="email" id="email" class="form-control">
+                <input type="email" id="email" class="form-control" required>
             </div>
-            <button id="generate-report" class="btn">Сформировать отчет</button>
+            <p id="fill-params-message" class="warning-message">Заполните параметры</p>
+            <button id="generate-report" class="btn" disabled>Сформировать отчет</button>
         </div>
     </div>
 
     <script>
-        document.getElementById('report-selector').addEventListener('change', function() {
-            const reportFields = document.getElementById('report-fields');
+        const reportSelector = document.getElementById('report-selector');
+        const reportFields = document.getElementById('report-fields');
+        const reportInstructions = document.getElementById('report-instructions');
+        const dateInput = document.getElementById('date');
+        const emailInput = document.getElementById('email');
+        const generateReportButton = document.getElementById('generate-report');
+        const fillParamsMessage = document.getElementById('fill-params-message');
+
+        reportSelector.addEventListener('change', function() {
             if (this.value) {
                 reportFields.classList.remove('hidden');
+                reportInstructions.classList.remove('hidden');
             } else {
                 reportFields.classList.add('hidden');
+                reportInstructions.classList.add('hidden');
             }
         });
 
-        document.getElementById('generate-report').addEventListener('click', function() {
-            const reportType = document.getElementById('report-selector').value;
-            const date = document.getElementById('date').value;
-            const email = document.getElementById('email').value;
-
-            if (reportType && date && email) {
-                alert(`Отчет "${reportType}" будет сформирован для email: ${email} на дату: ${date}`);
+        function validateForm() {
+            if (dateInput.value && emailInput.value) {
+                generateReportButton.disabled = false;
+                fillParamsMessage.classList.add('hidden');
             } else {
-                alert('Пожалуйста, заполните все поля.');
+                generateReportButton.disabled = true;
+                fillParamsMessage.classList.remove('hidden');
             }
-        });
+        }
+
+        dateInput.addEventListener('input', validateForm);
+        emailInput.addEventListener('input', validateForm);
     </script>
 </body>
 </html>
